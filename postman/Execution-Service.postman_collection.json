@@ -1,0 +1,183 @@
+﻿{
+    "variable":  [
+                     {
+                         "key":  "execution_url",
+                         "value":  "http://localhost:3102"
+                     }
+                 ],
+    "info":  {
+                 "description":  "Rotas de execução, conclusão e compensação da Saga.",
+                 "name":  "Tech Challenge Fase 4 - Execution Service",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Health Check",
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/"
+                                             },
+                                     "header":  [
+
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Listar execuções",
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes"
+                                             },
+                                     "header":  [
+
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Buscar execução",
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes/ID_MONGODB"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes/ID_MONGODB"
+                                             },
+                                     "header":  [
+
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Criar execução",
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\n  \"ordem_id\": 1,\n  \"diagnostico\": \"Desgaste no sistema de freios\",\n  \"reparo\": \"Substituição das pastilhas e revisão dos freios\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes"
+                                             },
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Iniciar diagnóstico",
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\n  \"status\": \"EM_DIAGNOSTICO\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "PATCH",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes/ID_MONGODB/status"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes/ID_MONGODB/status"
+                                             },
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Iniciar reparo",
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\n  \"status\": \"EM_REPARO\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "PATCH",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes/ID_MONGODB/status"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes/ID_MONGODB/status"
+                                             },
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Concluir execução",
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\n  \"status\": \"CONCLUIDA\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "PATCH",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes/ID_MONGODB/status"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes/ID_MONGODB/status"
+                                             },
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 }
+                 },
+                 {
+                     "name":  "Simular falha e compensação Saga",
+                     "request":  {
+                                     "method":  "POST",
+                                     "url":  {
+                                                 "host":  [
+                                                              "{{execution_url}}/execucoes/ID_MONGODB/falhar"
+                                                          ],
+                                                 "raw":  "{{execution_url}}/execucoes/ID_MONGODB/falhar"
+                                             },
+                                     "header":  [
+
+                                                ]
+                                 }
+                 }
+             ]
+}
