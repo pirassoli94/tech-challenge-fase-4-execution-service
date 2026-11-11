@@ -1,0 +1,157 @@
+
+> execution-service@1.0.0 test
+> jest --runInBand --coverage
+
+  console.error
+    ◇ injected env (0) from .env
+
+    [0m [90m  6 |[39m
+     [90m  7 |[39m [90m// Carrega as configurações do arquivo .env[39m
+    [31m[1m>[22m[39m[90m  8 |[39m require([32m"dotenv"[39m)[33m.[39mconfig()[33m;[39m
+     [90m    |[39m                   [31m[1m^[22m[39m
+     [90m  9 |[39m
+     [90m 10 |[39m [90m// Importa o Mongoose para conectar o Node.js ao MongoDB[39m
+     [90m 11 |[39m [36mconst[39m mongoose [33m=[39m require([32m"mongoose"[39m)[33m;[39m[0m
+
+      at ie (node_modules/dotenv/dist/index.cjs:7:155)
+      at Object.ae [as configDotenv] (node_modules/dotenv/dist/index.cjs:7:1128)
+      at Object.le [as config] (node_modules/dotenv/dist/index.cjs:7:1237)
+      at Object.config (index.js:8:19)
+      at Object.require (index.test.js:21:5)
+
+  console.log
+    Conexão com o MongoDB realizada com sucesso!
+
+      at log (index.js:76:13)
+
+  console.error
+    Erro ao criar execução: Falha simulada no MongoDB
+
+    [0m [90m 151 |[39m     res[33m.[39mstatus([35m201[39m)[33m.[39mjson(novaExecucao)[33m;[39m
+     [90m 152 |[39m   } [36mcatch[39m (erro) {
+    [31m[1m>[22m[39m[90m 153 |[39m     console[33m.[39merror([32m"Erro ao criar execução:"[39m[33m,[39m erro[33m.[39mmessage)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 154 |[39m
+     [90m 155 |[39m     res[33m.[39mstatus([35m500[39m)[33m.[39mjson({
+     [90m 156 |[39m       mensagem[33m:[39m [32m"Erro interno ao criar execução"[39m[0m
+
+      at error (index.js:153:13)
+
+  console.error
+    Erro ao listar execuções: Falha simulada na listagem
+
+    [0m [90m 166 |[39m     res[33m.[39mjson(execucoes)[33m;[39m
+     [90m 167 |[39m   } [36mcatch[39m (erro) {
+    [31m[1m>[22m[39m[90m 168 |[39m     console[33m.[39merror([32m"Erro ao listar execuções:"[39m[33m,[39m erro[33m.[39mmessage)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 169 |[39m
+     [90m 170 |[39m     res[33m.[39mstatus([35m500[39m)[33m.[39mjson({
+     [90m 171 |[39m       mensagem[33m:[39m [32m"Erro interno ao listar execuções"[39m[0m
+
+      at error (index.js:168:13)
+
+  console.error
+    Erro ao buscar execução: Falha simulada na busca
+
+    [0m [90m 199 |[39m     res[33m.[39mjson(execucao)[33m;[39m
+     [90m 200 |[39m   } [36mcatch[39m (erro) {
+    [31m[1m>[22m[39m[90m 201 |[39m     console[33m.[39merror([32m"Erro ao buscar execução:"[39m[33m,[39m erro[33m.[39mmessage)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 202 |[39m
+     [90m 203 |[39m     res[33m.[39mstatus([35m500[39m)[33m.[39mjson({
+     [90m 204 |[39m       mensagem[33m:[39m [32m"Erro interno ao buscar execução"[39m[0m
+
+      at error (index.js:201:13)
+
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+  console.error
+    Erro ao atualizar execução: Falha simulada na atualização
+
+    [0m [90m 288 |[39m
+     [90m 289 |[39m   } [36mcatch[39m (erro) {
+    [31m[1m>[22m[39m[90m 290 |[39m     console[33m.[39merror([32m"Erro ao atualizar execução:"[39m[33m,[39m erro[33m.[39mmessage)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 291 |[39m
+     [90m 292 |[39m     res[33m.[39mstatus([35m500[39m)[33m.[39mjson({
+     [90m 293 |[39m       mensagem[33m:[39m [32m"Erro interno ao atualizar execução"[39m[0m
+
+      at error (index.js:290:13)
+
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+  console.log
+    Mensagem EXECUCAO_FALHOU enviada para o RabbitMQ
+
+      at log (index.js:336:13)
+
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+  console.log
+    Mensagem EXECUCAO_FALHOU enviada para o RabbitMQ
+
+      at log (index.js:336:13)
+
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:13776) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+  console.log
+    Mensagem EXECUCAO_FALHOU enviada para o RabbitMQ
+
+      at log (index.js:336:13)
+
+  console.error
+    Erro ao registrar falha: Falha simulada durante cancelamento
+
+    [0m [90m 363 |[39m
+     [90m 364 |[39m   } [36mcatch[39m (erro) {
+    [31m[1m>[22m[39m[90m 365 |[39m     console[33m.[39merror([32m"Erro ao registrar falha:"[39m[33m,[39m erro[33m.[39mmessage)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 366 |[39m
+     [90m 367 |[39m     res[33m.[39mstatus([35m500[39m)[33m.[39mjson({
+     [90m 368 |[39m       mensagem[33m:[39m [32m"Erro interno ao registrar falha da execução"[39m[0m
+
+      at error (index.js:365:13)
+
+PASS ./index.test.js
+  Execution Service
+    √ GET / deve informar que o serviço está funcionando (22 ms)
+    √ POST /execucoes deve criar uma execução (27 ms)
+    √ POST /execucoes deve exigir campos obrigatórios (5 ms)
+    √ POST /execucoes deve bloquear pagamento não confirmado (5 ms)
+    √ POST /execucoes deve retornar 502 quando o Billing Service falhar (5 ms)
+    √ POST /execucoes deve retornar 500 quando o MongoDB falhar (8 ms)
+    √ GET /execucoes deve listar execuções (9 ms)
+    √ GET /execucoes deve retornar 500 quando o MongoDB falhar (7 ms)
+    √ GET /execucoes/:id deve buscar uma execução (7 ms)
+    √ GET /execucoes/:id deve rejeitar ID inválido (10 ms)
+    √ GET /execucoes/:id deve retornar 404 para execução inexistente (5 ms)
+    √ GET /execucoes/:id deve retornar 500 quando o MongoDB falhar (6 ms)
+    √ PATCH deve atualizar para EM_DIAGNOSTICO (10 ms)
+    √ PATCH deve atualizar para EM_REPARO (6 ms)
+    √ PATCH deve rejeitar status inválido (4 ms)
+    √ PATCH deve exigir o status (4 ms)
+    √ PATCH deve rejeitar ID inválido (4 ms)
+    √ PATCH deve retornar 404 para execução inexistente (6 ms)
+    √ PATCH CONCLUIDA deve avisar o OS Service (8 ms)
+    √ PATCH CONCLUIDA deve retornar 502 quando o OS Service falhar (8 ms)
+    √ PATCH deve retornar 500 quando o MongoDB falhar (6 ms)
+    √ POST /execucoes/:id/falhar deve cancelar a execução e publicar o evento (9 ms)
+    √ POST /execucoes/:id/falhar deve publicar EXECUCAO_FALHOU com os dados corretos (8 ms)
+    √ POST /execucoes/:id/falhar deve rejeitar ID inválido (3 ms)
+    √ POST /execucoes/:id/falhar deve retornar 404 para execução inexistente (5 ms)
+    √ POST /execucoes/:id/falhar deve informar erro quando o OS Service falhar (7 ms)
+    √ POST falhar deve retornar 500 quando o MongoDB falhar (6 ms)
+
+----------|---------|----------|---------|---------|---------------------
+File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s   
+----------|---------|----------|---------|---------|---------------------
+All files |   83.49 |    89.18 |   66.66 |   83.49 |                     
+ index.js |   83.49 |    89.18 |   66.66 |   83.49 | 32-61,70,79,375-376 
+----------|---------|----------|---------|---------|---------------------
+Test Suites: 1 passed, 1 total
+Tests:       27 passed, 27 total
+Snapshots:   0 total
+Time:        1.751 s, estimated 3 s
+Ran all test suites.
