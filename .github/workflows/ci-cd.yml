@@ -33,6 +33,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:coverage -- --coverageThreshold='{"global":{"statements":80,"lines":80}}'
+      - name: SonarQube Cloud Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
       - uses: actions/upload-artifact@v4
         with:
           name: coverage-execution-service
@@ -49,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verificar configuraÃ§Ã£o Kubernetes
+      - name: Verificar configuraÃƒÂ§ÃƒÂ£o Kubernetes
         id: kube-check
         shell: bash
         run: |
@@ -57,7 +62,7 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "KUBE_CONFIG nÃ£o configurado. Deploy ignorado."
+            echo "KUBE_CONFIG nÃƒÂ£o configurado. Deploy ignorado."
           fi
 
       - name: Configurar kubectl
