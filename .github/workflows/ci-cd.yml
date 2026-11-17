@@ -44,39 +44,55 @@ jobs:
           path: coverage/
       - run: docker build -t execution-service:${{ github.sha }} .
 
+  
   deploy-kubernetes:
-    name: Deploy Kubernetes
+    name: Deploy Kubernetes Local
     needs: test-build
-    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    env:
-      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+    runs-on: [self-hosted, Windows, X64, local-k8s]
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: powershell -NoProfile -ExecutionPolicy Bypass -File {0}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Baixar codigo
+        uses: actions/checkout@v4
 
-      - name: Verificar configuraÃƒÂ§ÃƒÂ£o Kubernetes
-        id: kube-check
-        shell: bash
+      - name: Verificar ambiente
         run: |
-          if [ -n "$KUBE_CONFIG" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "KUBE_CONFIG nÃƒÂ£o configurado. Deploy ignorado."
-          fi
+          docker info --format '{{.OSType}}'
+          if ($LASTEXITCODE -ne 0) { throw "Docker indisponivel" }
 
-      - name: Configurar kubectl
-        if: steps.kube-check.outputs.configured == 'true'
-        shell: bash
+          kubectl config current-context
+          if ($LASTEXITCODE -ne 0) { throw "Kubernetes indisponivel" }
+
+          kubectl get deployment execution-service -n tech-challenge
+          if ($LASTEXITCODE -ne 0) { throw "Deployment nao encontrado" }
+
+      - name: Construir imagem Docker
         run: |
-          mkdir -p ~/.kube
-          echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+          $imagem = "tech-challenge-fase-4-execution-service:${{ github.sha }}"
+          docker build -t $imagem .
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao construir imagem" }
 
-      - name: Aplicar manifestos
-        if: steps.kube-check.outputs.configured == 'true'
-        run: kubectl apply -f k8s/
+          docker save -o execution-service-deploy.tar $imagem
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao exportar imagem" }
 
-      - name: Validar rollout
-        if: steps.kube-check.outputs.configured == 'true'
-        run: kubectl rollout status deployment/execution-service --timeout=120s
+          docker cp execution-service-deploy.tar desktop-control-plane:/root/execution-service-deploy.tar
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao copiar imagem" }
 
+          docker exec desktop-control-plane ctr -n k8s.io images import /root/execution-service-deploy.tar
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao importar imagem" }
+
+      - name: Atualizar Execution Service
+        run: |
+          kubectl set image deployment/execution-service "tech-challenge-fase-4-execution-service=tech-challenge-fase-4-execution-service:${{ github.sha }}" -n tech-challenge
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao atualizar Execution Service" }
+
+      - name: Verificar atualizacao
+        run: |
+          kubectl rollout status deployment/execution-service -n tech-challenge --timeout=180s
+          if ($LASTEXITCODE -ne 0) { throw "Falha no rollout do Execution Service" }
