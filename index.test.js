@@ -545,6 +545,55 @@ describe("Execution Service", () => {
     expect(await Execucao.countDocuments({ ordem_id: ordemId })).toBe(0);
   });
 
+  test("evento malformado e rejeitado antes de consultar o Billing", async () => {
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "OUTRO_EVENTO", orcamento_id: 10 })
+    ).rejects.toThrow("Evento PAGAMENTO_CONFIRMADO invalido");
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: -1 })
+    ).rejects.toThrow("Evento PAGAMENTO_CONFIRMADO invalido");
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test("erro ao buscar orcamento impede criacao automatica", async () => {
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 64 })
+    ).rejects.toThrow("Nao foi possivel consultar o orcamento");
+  });
+
+  test("orcamento sem ordem valida nao cria execucao", async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 65, ordem_id: null })
+    });
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 65 })
+    ).rejects.toThrow("Orcamento sem ordem de servico valida");
+  });
+
+  test("Billing precisa responder confirmado true", async () => {
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 66, ordem_id: 7004 })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ confirmado: false })
+      });
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 66 })
+    ).rejects.toThrow("Pagamento ainda nao confirmado");
+    expect(await Execucao.countDocuments({ ordem_id: 7004 })).toBe(0);
+  });
+
+  test("GET /metrics expoe metricas do Execution Service", async () => {
+    const resposta = await request(app).get("/metrics");
+    expect(resposta.status).toBe(200);
+    expect(resposta.text).toContain("execution_service_");
+  });
+
   // ======================================================
   // FALHA E COMPENSAÇÃO DA SAGA
   // ======================================================
