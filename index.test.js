@@ -17,7 +17,8 @@ const {
   app,
   mongoose,
   Execucao,
-  definirCanalRabbitMQ
+  definirCanalRabbitMQ,
+  criarExecucaoAposPagamento
 } = require("./index");
 
 // Guarda o ID de uma execução criada durante os testes
@@ -471,6 +472,127 @@ describe("Execution Service", () => {
       .toBe("Erro interno ao atualizar execução");
   });
 
+
+  // ======================================================
+  // CRIACAO AUTOMATICA APOS CONFIRMACAO DE PAGAMENTO
+  // ======================================================
+
+  test("evento PAGAMENTO_CONFIRMADO cria execucao da ordem", async () => {
+    const ordemId = 7001;
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 61, ordem_id: ordemId })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ confirmado: true, pagamento: { id: 91 } })
+      });
+
+    const execucao = await criarExecucaoAposPagamento({
+      tipo: "PAGAMENTO_CONFIRMADO",
+      orcamento_id: 61
+    });
+
+    expect(execucao.ordem_id).toBe(ordemId);
+    expect(execucao.status).toBe("AGUARDANDO_EXECUCAO");
+    expect(execucao.diagnostico).toBe("Aguardando diagnostico");
+    expect(execucao.reparo).toBe("A definir");
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1, "http://localhost:3001/orcamentos/61"
+    );
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2, "http://localhost:3001/pagamentos/ordem/7001/confirmado"
+    );
+  });
+
+  test("evento repetido nao cria execucao duplicada", async () => {
+    const ordemId = 7002;
+    global.fetch.mockImplementation(async (url) => ({
+      ok: true,
+      json: async () => url.includes("/orcamentos/")
+        ? { id: 62, ordem_id: ordemId }
+        : { confirmado: true }
+    }));
+
+    const evento = { tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 62 };
+    const primeira = await criarExecucaoAposPagamento(evento);
+    const segunda = await criarExecucaoAposPagamento(evento);
+
+    expect(String(segunda._id)).toBe(String(primeira._id));
+    expect(await Execucao.countDocuments({ ordem_id: ordemId })).toBe(1);
+  });
+
+  test("nao cria execucao sem confirmacao do pagamento", async () => {
+    const ordemId = 7003;
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 63, ordem_id: ordemId })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404
+      });
+
+    await expect(
+      criarExecucaoAposPagamento({
+        tipo: "PAGAMENTO_CONFIRMADO",
+        orcamento_id: 63
+      })
+    ).rejects.toThrow("Pagamento da ordem ainda nao confirmado");
+
+    expect(await Execucao.countDocuments({ ordem_id: ordemId })).toBe(0);
+  });
+
+  test("evento malformado e rejeitado antes de consultar o Billing", async () => {
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "OUTRO_EVENTO", orcamento_id: 10 })
+    ).rejects.toThrow("Evento PAGAMENTO_CONFIRMADO invalido");
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: -1 })
+    ).rejects.toThrow("Evento PAGAMENTO_CONFIRMADO invalido");
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test("erro ao buscar orcamento impede criacao automatica", async () => {
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 64 })
+    ).rejects.toThrow("Nao foi possivel consultar o orcamento");
+  });
+
+  test("orcamento sem ordem valida nao cria execucao", async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 65, ordem_id: null })
+    });
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 65 })
+    ).rejects.toThrow("Orcamento sem ordem de servico valida");
+  });
+
+  test("Billing precisa responder confirmado true", async () => {
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 66, ordem_id: 7004 })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ confirmado: false })
+      });
+    await expect(
+      criarExecucaoAposPagamento({ tipo: "PAGAMENTO_CONFIRMADO", orcamento_id: 66 })
+    ).rejects.toThrow("Pagamento ainda nao confirmado");
+    expect(await Execucao.countDocuments({ ordem_id: 7004 })).toBe(0);
+  });
+
+  test("GET /metrics expoe metricas do Execution Service", async () => {
+    const resposta = await request(app).get("/metrics");
+    expect(resposta.status).toBe(200);
+    expect(resposta.text).toContain("execution_service_");
+  });
 
   // ======================================================
   // FALHA E COMPENSAÇÃO DA SAGA
