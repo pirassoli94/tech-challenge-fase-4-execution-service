@@ -166,16 +166,40 @@ async function conectarRabbitMQ() {
 
     console.log("Execution Service conectado ao RabbitMQ!");
 
-    // Fica aguardando mensagens na fila
-    canalRabbitMQ.consume("pagamento_confirmado", (msg) => {
-      if (msg) {
-        const mensagem = JSON.parse(msg.content.toString());
+    // Processa uma mensagem por vez, evitando criacoes concorrentes.
+    await canalRabbitMQ.prefetch(1);
+    canalRabbitMQ.consume("pagamento_confirmado", async (msg) => {
+      if (!msg) return;
 
-        console.log("Mensagem recebida do RabbitMQ:");
-        console.log(mensagem);
-
-        // Confirma ao RabbitMQ que a mensagem foi processada
+      let mensagem;
+      try {
+        mensagem = JSON.parse(msg.content.toString());
+      } catch (erro) {
+        console.error("Evento de pagamento com JSON invalido:", erro.message);
         canalRabbitMQ.ack(msg);
+        return;
+      }
+
+      if (
+        mensagem.tipo !== "PAGAMENTO_CONFIRMADO" ||
+        !Number.isSafeInteger(Number(mensagem.orcamento_id)) ||
+        Number(mensagem.orcamento_id) <= 0
+      ) {
+        console.warn("Evento de pagamento ignorado:", mensagem);
+        canalRabbitMQ.ack(msg);
+        return;
+      }
+
+      try {
+        const execucao = await criarExecucaoAposPagamento(mensagem);
+        console.log("Pagamento processado. Execucao:", String(execucao._id));
+        // Ack somente apos salvar ou localizar a execucao no MongoDB.
+        canalRabbitMQ.ack(msg);
+      } catch (erro) {
+        console.error("Erro ao criar execucao automatica:", erro.message);
+        // Reentrega apos um intervalo quando Billing ou MongoDB falhar.
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        canalRabbitMQ.nack(msg, false, true);
       }
     });
 
@@ -225,6 +249,56 @@ const execucaoSchema = new mongoose.Schema({
 
 // Cria o modelo usado para salvar e consultar execuções
 const Execucao = mongoose.model("Execucao", execucaoSchema);
+
+// O evento do Billing traz o ID do orcamento. Consulta-se o Billing
+// para localizar a ordem, sem acessar o banco de outro microsservico.
+async function criarExecucaoAposPagamento(mensagem) {
+  const orcamentoId = Number(mensagem?.orcamento_id);
+  if (
+    mensagem?.tipo !== "PAGAMENTO_CONFIRMADO" ||
+    !Number.isSafeInteger(orcamentoId) ||
+    orcamentoId <= 0
+  ) {
+    throw new Error("Evento PAGAMENTO_CONFIRMADO invalido");
+  }
+
+  const respostaOrcamento = await fetch(
+    `${process.env.BILLING_SERVICE_URL}/orcamentos/${orcamentoId}`
+  );
+  if (!respostaOrcamento.ok) {
+    throw new Error("Nao foi possivel consultar o orcamento no Billing");
+  }
+
+  const orcamento = await respostaOrcamento.json();
+  const ordemId = Number(orcamento.ordem_id);
+  if (!Number.isSafeInteger(ordemId) || ordemId <= 0) {
+    throw new Error("Orcamento sem ordem de servico valida");
+  }
+
+  // Mantem a regra da API: execucao somente com pagamento confirmado.
+  const respostaPagamento = await fetch(
+    `${process.env.BILLING_SERVICE_URL}/pagamentos/ordem/${ordemId}/confirmado`
+  );
+  if (!respostaPagamento.ok) {
+    throw new Error("Pagamento da ordem ainda nao confirmado no Billing");
+  }
+  const pagamento = await respostaPagamento.json();
+  if (pagamento.confirmado !== true) {
+    throw new Error("Pagamento ainda nao confirmado");
+  }
+
+  await mongoose.connection.asPromise();
+  const existente = await Execucao.findOne({ ordem_id: ordemId });
+  if (existente) return existente;
+
+  // Diagnostico e reparo serao definidos pela equipe durante a execucao.
+  return Execucao.create({
+    ordem_id: ordemId,
+    diagnostico: "Aguardando diagnostico",
+    reparo: "A definir",
+    status: "AGUARDANDO_EXECUCAO"
+  });
+}
 
 // Rota usada para verificar se o Execution Service está funcionando
 app.get("/", (req, res) => {
@@ -504,5 +578,6 @@ module.exports = {
   app,
   mongoose,
   Execucao,
-  definirCanalRabbitMQ
+  definirCanalRabbitMQ,
+  criarExecucaoAposPagamento
 };
